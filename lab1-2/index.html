@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<!-- Defines this document as an HTML5 document -->
+<html lang='en'>
+<head>
+    <meta charset='utf-8' />
+    <title>my First Map</title>
+    <!-- Sets the title displayed in the browser tab -->
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <!-- Loads the Mapbox GL JS stylesheet for styling and controls -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet">
+    <!-- Loads the Mapbox GL JS library used to create the interactive map -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
+    <style>
+        /* Removes the default margin and padding from the webpage */
+        body { margin: 0; padding: 0; }
+        /* Makes the map fill the browser window by positioning it from the top
+           to the bottom of the page and setting its width to 100%. */
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    </style>
+</head>
+<body>
+    <!-- Creates the HTML element where the map will appear -->
+    <div id='map'></div>
+    <!-- Starts the JavaScript code that creates the map -->
+    <script>
+    // Sets the access token that authorizes this webpage to access Mapbox services.
+     mapboxgl.accessToken = 'pk.eyJ1Ijoic21oc3RldmVuIiwiYSI6ImNtdjU0dmNjdTAyNjAyeXE1NWc1eTE1N2sifQ.McX5IfLo-cLfILbq6iwL5g';
+
+     // Initializes the Mapbox map and renders it inside the HTML element with the ID 'map'.
+     const mymap = new mapboxgl.Map({
+            // Identifies the HTML container where the interactive map will be displayed.
+            container: 'map',
+
+            // style: 'mapbox://styles/mapbox/light-v11',
+            // projection: 'globe',
+
+           // Centers the map on the University of Washington in Seattle
+           // Longitude: -122.3035, Latitude: 47.6553
+            center: [-122.3035, 47.6553],
+
+            // Sets the initial zoom level to 15 to show identifiable campus locations.
+            zoom: 15
+         });
+
+    // Listens for the style.load event, which fires when the map's style has finished loading.
+    mymap.on('style.load', () => {
+
+        // Changes the map's lighting preset to dusk giving the basemap a new appearance
+        mymap.setConfigProperty('basemap', 'lightPreset', 'dusk');
+
+        // Hides points of interest icons and labels, such as businesses and attractions
+        mymap.setConfigProperty('basemap', 'showPointOfInterestLabels', false);
+
+        // Hides road names and road shields so they do not distract from other map features
+        // 
+        mymap.setConfigProperty('basemap', 'showRoadLabels', false);
+
+        // Hides supported 3D objects, including buildings, landmarks, and trees
+        mymap.setConfigProperty('basemap', 'show3dObjects', false);
+    });
+
+    // Adds a fullscreen control that allows users to expand the map to fill the screen
+    mymap.addControl(new mapboxgl.FullscreenControl());
+
+    // Adds navigation controls that let users zoom in, zoom out, and change the map's orientation
+    mymap.addControl(new mapboxgl.NavigationControl());
+</script>
+<!-- Ends the JavaScript section -->
+</body>
+<!-- Ends the visible webpage content -->
+</html>
+<!-- Ends the HTML document -->
+
+<!-- 
+1. Hide road labels (showRoadLabels: false)
+I set showRoadLabels to false to hide road names and road shields on the map. 
+This reduces visual clutter and makes the map look simpler. This change would be useful when presenting a map where the main focus is on geographic 
+features or the overall layout of an area rather than street names.
+
+2. Hide 3D objects (show3dObjects: false)
+I set show3dObjects to false to hide 3D buildings, landmarks, trees, and related visual effects supported by the basemap. 
+This creates a less cluttered appearance. This change would be useful when creating a map that emphasizes the general layout of a neighborhood and makes geographic 
+features easier to view without 3D elements drawing attention away from them
+-->
+
+
