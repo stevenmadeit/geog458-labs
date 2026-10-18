@@ -1,0 +1,186 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>World City Population</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        #map-title {
+            position: absolute;
+            z-index: 2;
+            top: 15px;
+            left: 15px;
+            max-width: 330px;
+            padding: 14px 18px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 5px #777;
+        }
+
+        #map-title h1 {
+            margin: 0 0 6px;
+            font-size: 20px;
+        }
+
+        #map-title p {
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        #legend {
+            position: absolute;
+            z-index: 2;
+            right: 15px;
+            bottom: 25px;
+            width: 190px;
+            padding: 12px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 5px #777;
+            font-size: 12px;
+        }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin: 10px 0;
+        }
+
+        .legend-dot {
+            display: inline-block;
+            flex-shrink: 0;
+            border-radius: 50%;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <div id="map-title">
+        <h1>World City Population</h1>
+        <p>Highlighting megacities with populations of 10 million or more.</p>
+    </div>
+
+    <div id="legend"></div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1Ijoic21oc3RldmVuIiwiYSI6ImNtdjU0dmNjdTAyNjAyeXE1NWc1eTE1N2sifQ.McX5IfLo-cLfILbq6iwL5g';
+
+        const mymap = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/light-v11',
+            center: [0, 20],
+            zoom: 1.2
+        });
+
+        mymap.on('load', () => {
+            mymap.addSource('population', {
+                type: 'geojson',
+                data: 'data/world-cities.geojson'
+            });
+
+        mymap.addLayer({
+            id: 'population-layer',
+            type: 'circle',
+            source: 'population',
+            paint: {
+                'circle-radius': [
+                    'step',
+                    ['to-number', ['get', 'population'], 0],
+                    3,
+                    1000000, 6,
+                    5000000, 10,
+                    10000000, 15
+                ],
+
+                'circle-color': [
+                    'case',
+                    ['>=', ['to-number', ['get', 'population'], 0], 10000000],
+                    '#d73027',
+                    ['>=', ['to-number', ['get', 'population'], 0], 5000000],
+                    '#fc8d59',
+                    ['>=', ['to-number', ['get', 'population'], 0], 1000000],
+                    '#4575b4',
+                    '#91bfdb'
+                ],
+
+                'circle-opacity': 0.8,
+                'circle-stroke-width': 0.7,
+                'circle-stroke-color': '#ffffff'
+            }
+        });
+
+        mymap.on('click', 'population-layer', (event) => {
+            const feature = event.features[0];
+            const properties = feature.properties;
+
+            const cityName = properties['city'];
+            const population = Number(properties['population']);
+
+            const formattedPopulation = Number.isFinite(population)
+                ? population.toLocaleString('en-US')
+                : 'Not available';
+
+            new mapboxgl.Popup()
+                .setLngLat(feature.geometry.coordinates.slice(0, 2))
+                .setHTML(
+                    `<strong>${cityName}</strong><br>` +
+                    `Population: ${formattedPopulation}`
+                )
+                .addTo(mymap);
+        });
+
+        });
+
+        
+        const legend = document.getElementById('legend');
+
+        legend.innerHTML = `
+            <strong>Population</strong>
+            <div class="legend-row">
+                <span class="legend-dot"
+                    style="width:6px;height:6px;background:#91bfdb"></span>
+                <span>Under 1 million</span>
+            </div>
+            <div class="legend-row">
+                <span class="legend-dot"
+                    style="width:12px;height:12px;background:#4575b4"></span>
+                <span>1–under 5 million</span>
+            </div>
+            <div class="legend-row">
+                <span class="legend-dot"
+                    style="width:20px;height:20px;background:#fc8d59"></span>
+                <span>5–under 10 million</span>
+            </div>
+            <div class="legend-row">
+                <span class="legend-dot"
+                    style="width:30px;height:30px;background:#d73027"></span>
+                <span>10 million or more</span>
+            </div>
+            <p>Source: Natural Earth</p>
+        `;
+
+    </script>
+</body>
+</html>
