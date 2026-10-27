@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab 3: Mt. Si Hiking Terrain</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.15.0/dist/maplibre-gl.css">
+  <style>
+    body { margin: 0; font: 14px/1.5 Arial, sans-serif; color: #182e3a; }
+    #map { position: absolute; inset: 0; }
+    #panel { position: absolute; top: 12px; left: 12px; padding: 16px;
+      width: 260px; max-width: calc(100% - 100px); background: white;
+      max-height: calc(100% - 80px); overflow: auto; border-radius: 6px; }
+    h1 { margin: 0 0 8px; font-size: 19px; }
+    p { margin: 8px 0; }
+    label { display: block; }
+    .ramp { height: 14px; background: linear-gradient(to right,
+      #0a2352, #444d73, #7e7b78, #bfae6b, #ffea46); }
+    .values { display: flex; justify-content: space-between; }
+    .swatch { display: inline-block; width: 22px; height: 0;
+      border-top: 4px solid; vertical-align: middle; margin-right: 6px; }
+    .maplibregl-popup-content { white-space: pre-line; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <section id="panel">
+    <h1>Mt. Si Hiking Terrain</h1>
+    <p>USGS 3DEP elevation (2025-08-13) | King County trails</p>
+    <p id="status">Step 1: map frame ready; add the basemap next.</p>
+    <div id="surface-control" hidden>
+      <label><input id="show-surface" type="checkbox" checked> Show elevation</label>
+    </div>
+    <div id="trail-control" hidden>
+      <label><input id="show-trails" type="checkbox" checked> Show trails</label>
+    </div>
+    <div id="legend" hidden>
+      <p><strong>Elevation (meters)</strong></p>
+      <div class="ramp"></div>
+      <div class="values"><span>100</span><span>425</span><span>750</span><span>1075</span><span>1400</span></div>
+      <p><strong>Trail surface</strong></p>
+      <div><span class="swatch" style="border-color:#0b5fa5"></span>Soft surface</div>
+      <div><span class="swatch" style="border-color:#7b2d8e"></span>Paved</div>
+      <div><span class="swatch" style="border-color:#555555"></span>On street</div>
+      <div><span class="swatch" style="border-color:#999999"></span>Unknown</div>
+      <p>Click a trail for details. The elevation layer is an image, so it has no click values.</p>
+    </div>
+  </section>
+
+  <script type="module">
+    import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.15.0/dist/maplibre-gl.mjs';
+
+    const BOUNDS = [-121.82, 47.45, -121.68, 47.57];
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: {
+        version: 8,
+        sources: {},
+        layers: [{ id: 'background', type: 'background',
+          paint: { 'background-color': '#edf1f0' } }]
+      },
+      center: [-121.75, 47.51],
+      zoom: 12,
+      minZoom: 10,
+      maxZoom: 15,
+      maxBounds: [[BOUNDS[0], BOUNDS[1]], [BOUNDS[2], BOUNDS[3]]]
+    });
+    map.addControl(new maplibregl.NavigationControl());
+    map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }));
+
+    map.on('error', (event) => {
+      document.getElementById('status').textContent =
+        'Load error: check the file path and browser Console.';
+      console.error(event.error);
+    });
+
+    map.on('load', () => {
+      map.addSource('basemap-tiles', {
+        type: 'raster',
+        tiles: ['assets/mapbox-independent/{z}/{x}/{y}.png'],
+        tileSize: 256,
+        scheme: 'xyz',
+        minzoom: 10,
+        maxzoom: 15,
+        bounds: BOUNDS,
+        attribution: '© Mapbox © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      });
+      map.addLayer({
+        id: 'basemap',
+        type: 'raster',
+        source: 'basemap-tiles',
+        paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 }
+      });
+      document.getElementById('status').textContent =
+        'Step 2: check your Studio basemap; pan and zoom.';
+
+      map.addSource('elevation-tiles', {
+        type: 'raster',
+        tiles: ['assets/elevation/{z}/{x}/{y}.png'],
+        tileSize: 256,
+        scheme: 'xyz',
+        minzoom: 10,
+        maxzoom: 15,
+        bounds: BOUNDS,
+        attribution: 'Elevation: USGS 3DEP 1/3 arc-second DEM; map by Steven Do'
+      });
+      map.addLayer({
+        id: 'elevation-surface',
+        type: 'raster',
+        source: 'elevation-tiles',
+        paint: { 'raster-opacity': 0.7, 'raster-fade-duration': 0 }
+      });
+      document.getElementById('surface-control').hidden = false;
+      document.getElementById('legend').hidden = false;
+      document.getElementById('show-surface').addEventListener('change', (event) => {
+        map.setLayoutProperty('elevation-surface', 'visibility',
+          event.target.checked ? 'visible' : 'none');
+      });
+      document.getElementById('status').textContent =
+        'Step 3: toggle elevation to compare it with the basemap.';
+
+      map.addSource('trail-data', {
+        type: 'geojson',
+        data: 'data/trails.geojson',
+        attribution: 'Trails: King County GIS'
+      });
+      map.addLayer({
+        id: 'trails-casing',
+        type: 'line',
+        source: 'trail-data',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': '#ffffff', 'line-width': 5 }
+      });
+      map.addLayer({
+        id: 'trails',
+        type: 'line',
+        source: 'trail-data',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-width': 2.5,
+          'line-color': ['match', ['get', 'Surf_Type'],
+            'Soft Surface Trail', '#0b5fa5',
+            'Paved Trail', '#7b2d8e',
+            'On Street Trail', '#555555',
+            '#999999']
+        }
+      });
+
+      map.on('click', 'trails', (event) => {
+        const trail = event.features[0].properties;
+        new maplibregl.Popup()
+          .setLngLat(event.lngLat)
+          .setText([
+            trail.Trail_Name || 'Unnamed trail',
+            'Surface: ' + (trail.Surf_Type || 'unknown'),
+            'Type: ' + (trail.Trail_Type || 'unknown'),
+            'Managed by: ' + (trail.Manager || 'unknown')
+          ].join('\n'))
+          .addTo(map);
+      });
+      map.on('mouseenter', 'trails', () => {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+      map.on('mouseleave', 'trails', () => {
+        map.getCanvas().style.cursor = '';
+      });
+      document.getElementById('trail-control').hidden = false;
+      document.getElementById('show-trails').addEventListener('change', (event) => {
+        const v = event.target.checked ? 'visible' : 'none';
+        map.setLayoutProperty('trails', 'visibility', v);
+        map.setLayoutProperty('trails-casing', 'visibility', v);
+      });
+      document.getElementById('status').textContent =
+        'Step 4: click a trail to read its details.';
+    });
+  </script>
+</body>
+</html>
